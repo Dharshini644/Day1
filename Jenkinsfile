@@ -1,15 +1,7 @@
 pipeline {
-    agent {
-        docker 
-        { 
-            image 'docker:24.0.5' 
-            args '-v /var/run/docker.sock:/var/run/docker.sock' 
-        }
+    agent any
     }
-    tools{
-        maven 'Maven'
-        jdk 'jdk'
-    }
+    
     stages {
         stage('Checkout') {
             steps {
