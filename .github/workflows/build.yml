@@ -1,4 +1,4 @@
-name: CI - Windows Self-Hosted
+name: Build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 jobs:
   build-and-run:
     # Run on your self-hosted Windows runner (must be registered & online)
-    runs-on: [self-hosted, windows, x64]
+    runs-on: ubuntu-latest 
 
     steps:
       - name: Checkout code
