@@ -1,0 +1,53 @@
+name: CI - Windows Self-Hosted
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-run:
+    # Run on your self-hosted Windows runner (must be registered & online)
+    runs-on: [self-hosted, windows, x64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner info (debug)
+        run: |
+          Write-Host "Runner labels: $env:RUNNER_LABELS"
+          Write-Host "GitHub workspace: $env:GITHUB_WORKSPACE"
+          mvn -v || Write-Host "mvn not found"
+        shell: pwsh
+
+      - name: Build with Maven
+        # This assumes mvn is on PATH of the runner
+        run: mvn -B clean package -DskipTests
+        shell: pwsh
+
+      - name: Stop any previous instance of this jar (safe stop)
+        run: |
+          $jarName = "sample-app-1.0-SNAPSHOT.jar"
+          $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*$jarName*" }
+          if ($procs) {
+            Write-Host "Stopping existing processes for $jarName ..."
+            foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+          } else {
+            Write-Host "No running process found for $jarName"
+          }
+        shell: pwsh
+
+      - name: Run app in background (PowerShell)
+        run: |
+          $jarPath = Join-Path $env:GITHUB_WORKSPACE "target\sample-app-1.0-SNAPSHOT.jar"
+          if (-Not (Test-Path $jarPath)) {
+            Write-Error "Jar not found at $jarPath"
+            exit 1
+          }
+          Write-Host "Starting $jarPath"
+          Start-Process -FilePath 'java' -ArgumentList '-jar', $jarPath -WorkingDirectory $env:GITHUB_WORKSPACE -NoNewWindow
+        shell: pwsh
+
+      - name: Done
+        run: Write-Host "Build+Run steps finished"
+        shell: pwsh
